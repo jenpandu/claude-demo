@@ -88,3 +88,32 @@ def test_rejected_expense_is_not_stored(client):
 
 def test_valid_expense_still_created(client):
     assert client.post("/expenses", json=VALID).status_code == 201
+
+
+@pytest.mark.parametrize(
+    "amount, participants",
+    [(100, ["a", "b", "c"]), (1, ["a", "b"]), (10, ["a", "b", "c", "d", "e", "f", "g"]), (7, ["a"])],
+)
+def test_split_shares_sum_to_amount(amount, participants):
+    shares = split_evenly(amount, participants)
+    assert sum(shares.values()) == amount
+    assert max(shares.values()) - min(shares.values()) <= 1
+
+
+def test_split_remainder_goes_to_first_participants_in_order():
+    assert split_evenly(100, ["a", "b", "c"]) == {"a": 34, "b": 33, "c": 33}
+    assert split_evenly(101, ["a", "b", "c"]) == {"a": 34, "b": 34, "c": 33}
+
+
+def test_balances_sum_to_zero_for_uneven_splits(client):
+    for amount, payer, parts in [
+        (100, "ana", ["ana", "ben", "cal"]),
+        (1, "ben", ["ana", "ben"]),
+        (1001, "cal", ["ana", "ben", "cal", "dee"]),
+    ]:
+        client.post(
+            "/expenses",
+            json={"amount_cents": amount, "paid_by": payer, "participants": parts},
+        )
+    balances = client.get("/balances").get_json()["balances"]
+    assert sum(balances.values()) == 0
