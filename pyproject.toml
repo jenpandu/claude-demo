@@ -1,0 +1,34 @@
+[project]
+name = "ledger"
+version = "0.1.0"
+description = "A small expense-sharing API"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.0",
+    "python-dotenv>=1.0",
+]
+
+# Test tooling is an optional group rather than a hard dependency, so a
+# deployment installs the app without dragging pytest along with it.
+# Install both with: pip install -e ".[dev]"
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# Flat layout -- the modules sit at the project root rather than in a src/
+# package directory. Setuptools can't infer that safely when there is more than
+# one top-level module, so name them explicitly.
+[tool.setuptools]
+py-modules = ["app", "splitter"]
+
+# One of the real arguments for pyproject.toml over requirements.txt: tool
+# configuration lives in the same file as the dependencies instead of being
+# scattered across pytest.ini, setup.cfg and tox.ini.
+[tool.pytest.ini_options]
+testpaths = ["."]
+addopts = "-q"
