@@ -8,3 +8,6 @@ __pycache__/
 build/
 dist/
 .pytest_cache/
+
+# don't push any worktrees 
+.claude/worktrees
