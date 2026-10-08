@@ -10,7 +10,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 
-from splitter import balances
+from splitter import balances, validate_expense
 
 load_dotenv()
 
@@ -34,7 +34,10 @@ def create_app():
 
     @app.post("/expenses")
     def add_expense():
-        body = request.get_json(silent=True) or {}
+        body = request.get_json(silent=True)
+        errors = validate_expense(body)
+        if errors:
+            return jsonify(errors=errors), 400
         _expenses.append(
             {
                 "amount_cents": body["amount_cents"],

@@ -7,6 +7,39 @@ way a ledger stops balancing.
 """
 
 
+def validate_expense(body):
+    """Check a parsed expense payload. Returns a list of error strings (empty if valid)."""
+    if not isinstance(body, dict):
+        return ["body must be a JSON object"]
+    errors = []
+
+    amount = body.get("amount_cents")
+    if "amount_cents" not in body:
+        errors.append("amount_cents is required")
+    elif isinstance(amount, bool) or not isinstance(amount, int):
+        errors.append("amount_cents must be an integer number of cents")
+    elif amount <= 0:
+        errors.append("amount_cents must be greater than zero")
+
+    paid_by = body.get("paid_by")
+    if "paid_by" not in body:
+        errors.append("paid_by is required")
+    elif not isinstance(paid_by, str) or not paid_by.strip():
+        errors.append("paid_by must be a non-empty string")
+
+    participants = body.get("participants")
+    if "participants" not in body:
+        errors.append("participants is required")
+    elif not isinstance(participants, list) or not participants:
+        errors.append("participants must be a non-empty list")
+    elif not all(isinstance(p, str) and p.strip() for p in participants):
+        errors.append("participants must contain only non-empty strings")
+    elif len(set(participants)) != len(participants):
+        errors.append("participants must not contain duplicates")
+
+    return errors
+
+
 def split_evenly(amount_cents, participants):
     """Divide one expense between the people who shared it.
 

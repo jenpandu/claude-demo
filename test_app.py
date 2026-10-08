@@ -41,3 +41,50 @@ def test_payer_is_credited_the_others_shares(client):
     body = client.get("/balances").get_json()
     assert body["balances"]["ana"] == 600
     assert body["balances"]["ben"] == -300
+
+
+VALID = {"amount_cents": 900, "paid_by": "ana", "participants": ["ana", "ben"]}
+
+
+@pytest.mark.parametrize("field", ["amount_cents", "paid_by", "participants"])
+def test_missing_field_is_400_not_500(client, field):
+    body = {k: v for k, v in VALID.items() if k != field}
+    resp = client.post("/expenses", json=body)
+    assert resp.status_code == 400
+    assert any(field in e for e in resp.get_json()["errors"])
+
+
+@pytest.mark.parametrize(
+    "override",
+    [
+        {"amount_cents": 9.5},
+        {"amount_cents": "900"},
+        {"amount_cents": True},
+        {"amount_cents": 0},
+        {"amount_cents": -100},
+        {"paid_by": ""},
+        {"paid_by": 7},
+        {"participants": []},
+        {"participants": "ana"},
+        {"participants": ["ana", 3]},
+        {"participants": ["ana", "ana"]},
+    ],
+)
+def test_invalid_values_are_400(client, override):
+    resp = client.post("/expenses", json={**VALID, **override})
+    assert resp.status_code == 400
+
+
+@pytest.mark.parametrize("raw", [None, "not json", "[1, 2]"])
+def test_non_object_body_is_400(client, raw):
+    resp = client.post("/expenses", data=raw, content_type="application/json")
+    assert resp.status_code == 400
+
+
+def test_rejected_expense_is_not_stored(client):
+    client.post("/expenses", json={"paid_by": "ana"})
+    assert client.get("/balances").get_json()["balances"] == {}
+
+
+def test_valid_expense_still_created(client):
+    assert client.post("/expenses", json=VALID).status_code == 201
